@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+import { spawn } from "node:child_process";
+
+const [mode, ...values] = process.argv.slice(2);
+
+switch (mode) {
+  case "success":
+    process.stdout.write("completed\n");
+    break;
+  case "streams":
+    process.stdout.write(values[0] ?? "stdout-value");
+    process.stderr.write(values[1] ?? "stderr-value");
+    break;
+  case "exit":
+    process.stdout.write("before-exit");
+    process.stderr.write("synthetic-error");
+    process.exitCode = Number(values[0]);
+    break;
+  case "arguments":
+    process.stdout.write(JSON.stringify(values));
+    break;
+  case "cwd":
+    process.stdout.write(process.cwd());
+    break;
+  case "env":
+    process.stdout.write(JSON.stringify(Object.fromEntries(
+      values.map((name) => [name, process.env[name] ?? null]),
+    )));
+    break;
+  case "structured":
+    process.stdout.write(values[0]);
+    break;
+  case "wait":
+    setTimeout(() => process.stdout.write("finished"), Number(values[0]));
+    break;
+  case "descendant": {
+    const descendant = spawn(process.execPath, [
+      "--input-type=module",
+      "--eval",
+      "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);",
+    ], { stdio: ["ignore", "inherit", "inherit"] });
+    process.stdout.write(`${descendant.pid}\n`);
+    setInterval(() => {}, 1000);
+    break;
+  }
+  default:
+    process.stderr.write(`unknown fixture mode: ${mode}`);
+    process.exitCode = 64;
+}

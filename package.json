@@ -1,0 +1,14 @@
+{
+  "name": "lol-data-refresh-cron",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generic dependency-aware scheduler for data maintenance jobs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test"
+  }
+}

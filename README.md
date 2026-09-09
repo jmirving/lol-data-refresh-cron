@@ -27,3 +27,34 @@ Worker-specific integration changes are tracked in those repositories rather tha
 ## Core Rule
 
 The current workers are only the first jobs. The scheduler must support an arbitrary future job graph without hardcoded assumptions about which job comes next.
+
+## Runtime and Development
+
+The orchestration core uses Node.js 20 or newer and has no runtime dependencies. Tests use Node's built-in test runner.
+
+```sh
+npm test
+npm start
+```
+
+`npm start` currently runs an empty graph intentionally. Real worker registration belongs to later integration phases.
+
+## Generic Core API
+
+Jobs are declared with `defineJob` and provide:
+
+- a unique `id`,
+- optional `enabled`, `dependencies`, `eligibility`, and `timeoutMs` values,
+- an async `execute(context)` adapter returning `SUCCESS`, `SKIPPED`, or `FAILED` plus optional reason/error/metadata fields.
+
+The scheduler owns the `SKIPPED_DEPENDENCY_FAILED` status. A normal `SKIPPED` dependency does not block downstream work; `FAILED` and transitively dependency-blocked prerequisites do. Execution order is a deterministic topological order with job ID as the tie-breaker, so declaration order has no effect.
+
+Eligibility is a generic policy boundary. Built-in policies cover every invocation, daily invocation, selected UTC weekdays, and selected UTC month days; custom policies can implement the same `evaluate(context)` contract.
+
+`runJobs` returns a structured deterministic-order summary. `runAndReport` also emits the human-readable summary and returns the intended process exit code. `runProcess` applies that code at the process boundary and maps graph/configuration errors to a non-zero exit. Only an actual job `FAILED` result makes a completed run non-zero.
+
+## External Commands
+
+`createCommandAdapter` executes an external program as a job without a shell. It supports arguments, working directory, inherited environment with explicit overrides, stdout/stderr capture, exit-code mapping, timeouts with termination escalation, and optional generic JSON results.
+
+The complete adapter and future-worker contract is documented in [External Command Adapter Contract](docs/COMMAND_ADAPTER.md).

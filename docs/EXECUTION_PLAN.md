@@ -376,3 +376,11 @@ This proves the generic orchestrator before worker-specific constraints can dist
 - disabled/ineligible jobs produce explicit skipped results.
 - final process exits non-zero if an actual job fails.
 - no test contains knowledge of the four current League workers.
+
+## Core implementation note
+
+The generic core is implemented with Node.js 20+ and no runtime dependencies. The in-process `execute(context)` function remains the adapter boundary. A domain-neutral subprocess adapter now implements Phase 4 command invocation, environment/run-context passing, stream and exit capture, timeout termination, and optional structured JSON results. No worker repository is registered yet.
+
+Execution is currently sequential in deterministic topological order. Independent branches are isolated for failure propagation but are not run concurrently. Concurrency is not required by the architecture and can be added later without changing dependency semantics.
+
+The subprocess adapter adds only generic failure reason codes (`COMMAND_SPAWN_ERROR`, `COMMAND_EXIT_NON_ZERO`, and `INVALID_STRUCTURED_OUTPUT`) to the existing result contract. Status and dependency semantics are unchanged. See [COMMAND_ADAPTER.md](COMMAND_ADAPTER.md) for the external worker contract.
