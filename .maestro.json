@@ -1,0 +1,130 @@
+{
+  "repository": "jmirving/lol-data-refresh-cron",
+  "defaultBranch": "main",
+  "defaultConcurrency": 4,
+  "baseline": {
+    "commands": [
+      "npm test"
+    ],
+    "allowFailing": false
+  },
+  "capabilities": {
+    "node": {
+      "preflight": "node --version"
+    }
+  },
+  "integration": {
+    "enabled": false,
+    "commands": [
+      "npm test"
+    ],
+    "postMergeCommands": [],
+    "closeIssues": false
+  },
+  "work": {
+    "1": {
+      "status": "ready",
+      "blockedBy": [
+        "3"
+      ],
+      "requires": [
+        "node"
+      ]
+    },
+    "2": {
+      "status": "ready",
+      "requires": [
+        "node"
+      ]
+    },
+    "3": {
+      "status": "ready",
+      "blockedBy": [
+        "2"
+      ],
+      "requires": [
+        "node"
+      ]
+    },
+    "4": {
+      "status": "ready",
+      "blockedBy": [
+        "1",
+        "2",
+        "3"
+      ],
+      "requires": [
+        "node"
+      ]
+    },
+    "5": {
+      "status": "ready",
+      "requires": [
+        "node"
+      ]
+    },
+    "7": {
+      "status": "complete",
+      "requires": [
+        "node"
+      ]
+    },
+    "8": {
+      "status": "ready",
+      "blockedBy": [
+        "9"
+      ],
+      "requires": [
+        "node"
+      ]
+    },
+    "9": {
+      "status": "ready",
+      "blockedBy": [
+        "10"
+      ],
+      "requires": [
+        "node"
+      ]
+    },
+    "10": {
+      "status": "ready",
+      "blockedBy": [
+        "7"
+      ],
+      "requires": [
+        "node"
+      ]
+    },
+    "11": {
+      "status": "ready",
+      "blockedBy": [
+        "8",
+        "9",
+        "10",
+        "12"
+      ],
+      "requires": [
+        "node"
+      ]
+    },
+    "12": {
+      "status": "ready",
+      "requires": [
+        "node"
+      ]
+    },
+    "13": {
+      "status": "ready",
+      "blockedBy": [
+        "1",
+        "2",
+        "3",
+        "7"
+      ],
+      "requires": [
+        "node"
+      ]
+    }
+  }
+}
