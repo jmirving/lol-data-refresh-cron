@@ -1,4 +1,5 @@
 const bindingTypes = new Set(["string", "boolean", "integer", "string-array"]);
+const secretDescriptorKeys = new Set(["environment", "required"]);
 
 export class RuntimeProfileError extends Error {
   constructor(message) {
@@ -24,6 +25,13 @@ function requireIdentity(value, name) {
 function requireKey(value, name) {
   if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(value)) {
     throw new RuntimeProfileError(`${name} must start with a letter and contain only letters, numbers, _, or -`);
+  }
+}
+
+function requireOnlyKeys(value, allowedKeys, name) {
+  const unsupportedKey = Reflect.ownKeys(value).find((key) => !allowedKeys.has(key));
+  if (unsupportedKey !== undefined) {
+    throw new RuntimeProfileError(`${name} has unsupported field: ${String(unsupportedKey)}`);
   }
 }
 
@@ -97,7 +105,11 @@ function resolveSecrets(definition, environment, profileIdentity) {
   const resolved = {};
   for (const [secretName, descriptor] of Object.entries(definition)) {
     requireKey(secretName, `secret name ${secretName}`);
+    if (secretName === "toJSON") {
+      throw new RuntimeProfileError("secret name toJSON is reserved");
+    }
     requireRecord(descriptor, `secret ${secretName}`);
+    requireOnlyKeys(descriptor, secretDescriptorKeys, `secret ${secretName}`);
     if (typeof descriptor.environment !== "string" || descriptor.environment.length === 0) {
       throw new RuntimeProfileError(`secret ${secretName} environment must be a non-empty string`);
     }

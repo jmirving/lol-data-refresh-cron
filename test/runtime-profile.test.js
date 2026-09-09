@@ -98,7 +98,46 @@ test("secrets resolve only from environment and are redacted from serialization 
       definitions: { test: { secrets: { token: { value: secretValue } } } },
       environment: {},
     }),
-    /secret token environment must be a non-empty string/,
+    /secret token has unsupported field: value/,
+  );
+  assert.throws(
+    () => loadRuntimeProfile("test", {
+      definitions: {
+        test: {
+          secrets: {
+            token: { environment: "PUBLICATION_TOKEN", value: secretValue },
+          },
+        },
+      },
+      environment: { PUBLICATION_TOKEN: secretValue },
+    }),
+    /secret token has unsupported field: value/,
+  );
+  assert.throws(
+    () => loadRuntimeProfile("test", {
+      definitions: {
+        test: {
+          secrets: {
+            token: { environment: "PUBLICATION_TOKEN", description: "publish credential" },
+          },
+        },
+      },
+      environment: { PUBLICATION_TOKEN: secretValue },
+    }),
+    /secret token has unsupported field: description/,
+  );
+  assert.throws(
+    () => loadRuntimeProfile("test", {
+      definitions: {
+        test: {
+          secrets: {
+            toJSON: { environment: "PUBLICATION_TOKEN" },
+          },
+        },
+      },
+      environment: { PUBLICATION_TOKEN: secretValue },
+    }),
+    /secret name toJSON is reserved/,
   );
 });
 

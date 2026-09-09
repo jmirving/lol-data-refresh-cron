@@ -43,8 +43,10 @@ default; set `required: false` to omit a missing value. Boolean environment
 values must be exactly `true` or `false`; string arrays use comma-separated
 environment values.
 
-Secrets can only name an environment variable. Resolved secrets are available
-to the injected job factory, but serialize as `[REDACTED]`. Only
+Secret descriptors accept only `environment` and the optional `required` flag;
+literal `value` fields and other fields are rejected. The secret name `toJSON`
+is reserved for serialization redaction. Resolved secrets are available to the
+injected job factory, but serialize as `[REDACTED]`. Only
 `{ profile: identity }` is attached to run metadata. Job factories must use the
 injected profile argument rather than reading process globals:
 
