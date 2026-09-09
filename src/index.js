@@ -5,4 +5,5 @@ export { defineJob } from "./job.js";
 export { runAndReport, runJobs } from "./orchestrator.js";
 export { runProcess } from "./process.js";
 export { JobStatus, ResultReason } from "./result.js";
+export { RuntimeProfileError, loadRuntimeProfile, runtimeProfileDefinitions } from "./runtime-profile.js";
 export { exitCodeForSummary, formatRunSummary } from "./summary.js";

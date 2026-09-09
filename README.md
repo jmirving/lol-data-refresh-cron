@@ -39,6 +39,12 @@ npm start
 
 `npm start` currently runs an empty graph intentionally. Real worker registration belongs to later integration phases.
 
+Runtime resources are selected and validated before that graph is constructed.
+The CLI defaults to the safe `local` profile and accepts an explicit profile via
+`npm start -- --profile test` or `ORCHESTRATOR_PROFILE`. See
+[Runtime Profiles](docs/RUNTIME_PROFILES.md) for the binding schema, supported
+profiles, production requirements, and secret-handling contract.
+
 ## Generic Core API
 
 Jobs are declared with `defineJob` and provide:

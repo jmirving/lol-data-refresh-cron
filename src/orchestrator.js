@@ -84,6 +84,7 @@ export async function runJobs(jobs, options = {}) {
     throw new TypeError("scheduledAt must be a valid Date");
   }
   const runStartedAt = timestamp(clock);
+  const runMetadata = Object.freeze({ ...(options.runMetadata ?? {}) });
   const results = [];
   const resultById = new Map();
 
@@ -109,6 +110,7 @@ export async function runJobs(jobs, options = {}) {
         const startedAt = timestamp(clock).toISOString();
         const context = Object.freeze({
           runId,
+          runMetadata,
           scheduledAt: new Date(scheduledAt),
           jobId: job.id,
           dependencies: Object.freeze(Object.fromEntries(
@@ -164,6 +166,7 @@ export async function runJobs(jobs, options = {}) {
     durationMs: Math.max(0, endedAt.valueOf() - runStartedAt.valueOf()),
     counts: Object.freeze(counts),
     results: Object.freeze(results),
+    runMetadata,
   };
   return Object.freeze(summary);
 }

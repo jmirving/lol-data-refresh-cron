@@ -296,6 +296,21 @@ test("job result metadata is preserved", async () => {
   assert.equal(summary.results[0].durationMs, 0);
 });
 
+test("generic run metadata is exposed to jobs and the final summary", async () => {
+  let receivedMetadata;
+  const runMetadata = { profile: "test" };
+  const summary = await runJobs([
+    job("A", { execute: async (context) => {
+      receivedMetadata = context.runMetadata;
+      return { status: JobStatus.SUCCESS };
+    } }),
+  ], { ...fixedOptions, runMetadata });
+
+  assert.deepEqual(receivedMetadata, runMetadata);
+  assert.equal(receivedMetadata, summary.runMetadata);
+  assert.equal(Object.isFrozen(summary.runMetadata), true);
+});
+
 test("thrown errors and invalid worker results are actual failures", async () => {
   const summary = await runJobs([
     job("A", { execute: async () => { throw new Error("synthetic exception"); } }),

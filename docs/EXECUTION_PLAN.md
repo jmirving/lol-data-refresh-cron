@@ -384,3 +384,9 @@ The generic core is implemented with Node.js 20+ and no runtime dependencies. Th
 Execution is currently sequential in deterministic topological order. Independent branches are isolated for failure propagation but are not run concurrently. Concurrency is not required by the architecture and can be added later without changing dependency semantics.
 
 The subprocess adapter adds only generic failure reason codes (`COMMAND_SPAWN_ERROR`, `COMMAND_EXIT_NON_ZERO`, and `INVALID_STRUCTURED_OUTPUT`) to the existing result contract. Status and dependency semantics are unchanged. See [COMMAND_ADAPTER.md](COMMAND_ADAPTER.md) for the external worker contract.
+
+Runtime profile selection is implemented at the CLI boundary with validated
+`local`, `test`, and `production` definitions. Job construction receives the
+resolved profile by injection, while the generic orchestrator only carries safe
+run metadata. Secrets are environment-only and excluded from serialization. See
+[RUNTIME_PROFILES.md](RUNTIME_PROFILES.md) for the schema and CLI contract.
