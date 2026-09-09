@@ -11,6 +11,17 @@ const java = process.env.CONFORMANCE_JAVA ?? "java";
 const gradle = process.env.CONFORMANCE_GRADLE ?? "gradle";
 const fixtureVersion = "99.1.0-conformance";
 const artifactBuilderExecutable = "lol-ddragon-context-artifact-builder";
+const oracleFileId = "local-file-2026";
+const oracleFileName = "2026_LoL_esports_match_data_from_OraclesElixir.csv";
+const oracleCsv = [
+  "gameid,league,split,year,date,game,patch,participantid,side,teamid,ban1,ban2,ban3,ban4,ban5,pick1,pick2,pick3,pick4,pick5",
+  "1,LCS,Spring,2026,2026-01-15,1,15.1,100,Blue,1,A,B,C,D,E,F,G,H,I,J",
+  "",
+].join("\n");
+const snapshotArchive = Buffer.from(
+  "H4sIABTUoWoC/+3RsQrCMBSF4TxKX6DxtoZAR8GOLr5BiFULmkBMxcdvdFFcBRH8v+VcznKGu0vuEEN246nuOt1oqX0M+5jOLvhhse1X602v8y2rD0hhjXlk8Z4i7fJ53/vGWLGqEvUF0yW7VObVf3r5duWSP47XQQEAAAAAAAAAAAAAAAAAft8MiuxWRgAoAAA=",
+  "base64",
+);
 
 function gradleBuild(task) {
   return {
@@ -115,20 +126,22 @@ async function prepareSnapshot({ workspace }) {
     "/versions": { status: 200, body: `["${fixtureVersion}"]`, contentType: "application/json" },
     "/failure": { status: 500, body: "synthetic failure" },
     "/hang": "hang",
-    "/dragontail-source": { status: 200, body: "synthetic archive" },
+    [`/cdn/dragontail-${fixtureVersion}.tgz`]: {
+      status: 200,
+      body: snapshotArchive,
+      contentType: "application/gzip",
+    },
   });
   const makeData = async (name) => {
     const root = join(workspace, name);
-    const raw = join(root, "raw", fixtureVersion);
-    await mkdir(raw, { recursive: true });
-    await writeFile(join(raw, `dragontail-${fixtureVersion}.tgz`), "synthetic archive");
-    await mkdir(join(root, "extracted", fixtureVersion), { recursive: true });
+    await mkdir(root, { recursive: true });
     return root;
   };
   return {
     ...server,
     plainData: await makeData("plain-data"),
     structuredData: await makeData("structured-data"),
+    archiveSha: createHash("sha256").update(snapshotArchive).digest("hex"),
   };
 }
 
@@ -153,33 +166,88 @@ const downloader = {
   id: "oracle-downloader",
   name: "Oracle downloader",
   repository: "https://github.com/jmirving/lol-pro-data-download-cron.git",
-  revision: "9b3a6727a9437af63ae381106f61a69c89d3792b",
+  revision: "f824922b7021af69afe6d7980e0644860200ec16",
   build: () => gradleBuild("bootJar"),
   prepare: async ({ workspace }) => ({
     ...await startStubServer({
+      "/folder": {
+        status: 200,
+        body: `[[null,"${oracleFileId}"],null,null,null,"text/csv","${oracleFileName}"]`,
+        contentType: "text/html",
+      },
+      [`/download?export=download&id=${oracleFileId}`]: {
+        status: 200,
+        body: oracleCsv,
+        contentType: "text/csv",
+      },
       "/empty": { status: 200, body: "<html>synthetic empty listing</html>", contentType: "text/html" },
       "/hang": "hang",
     }),
     output: join(workspace, "raw"),
+    firstHash: undefined,
   }),
-  cases: ({ checkout, fixture }) => {
-    const common = [
-      `--prodata.download.outputDir=${fixture.output}`,
+  cases: ({ checkout, workspace, fixture }) => {
+    const jar = "lol-pro-data-download-cron-1.0-SNAPSHOT.jar";
+    const sourceArgs = [
+      `--prodata.download.googleDriveFolderUrl=${fixture.baseUrl}/folder`,
+      `--prodata.download.googleDriveDownloadUrl=${fixture.baseUrl}/download`,
       "--prodata.download.years=2026",
+    ];
+    const structuredArgs = [
+      ...sourceArgs,
+      `--prodata.download.outputDir=${fixture.output}`,
       "--prodata.download.structuredOutput=json",
     ];
+    const published = join(fixture.output, oracleFileName);
     return [
       {
-        id: "local-success-path-unavailable",
-        groups: ["plainCli", "structuredOutput", "idempotencyPathHandling"],
-        violation: "reviewed worker hardcodes https://drive.google.com/uc for file downloads; a successful pinned CLI cannot use a local stub source endpoint",
+        id: "plain-success",
+        groups: ["plainCli", "streams"],
+        adapter: javaJar(checkout, jar, [
+          ...sourceArgs,
+          `--prodata.download.outputDir=${join(workspace, "plain-raw")}`,
+        ]),
+        async assert(result) {
+          assertSuccess(result);
+          assert.equal(await readFile(join(workspace, "plain-raw", oracleFileName), "utf8"), oracleCsv);
+        },
+      },
+      {
+        id: "structured-success",
+        groups: ["structuredOutput", "idempotencyPathHandling"],
+        adapter: javaJar(checkout, jar, structuredArgs, { structured: true }),
+        async assert(result) {
+          assertSuccess(result);
+          assert.equal(result.metadata.structured.outputDirectory, fixture.output);
+          assert.deepEqual(result.metadata.structured.years, [2026]);
+          const artifact = result.metadata.structured.artifacts[0];
+          assert.equal(artifact.fileName, oracleFileName);
+          assert.equal(artifact.path, published);
+          assert.equal(artifact.rowCount, 1);
+          assert.equal(artifact.sourceUrl, `${fixture.baseUrl}/download?export=download&id=${oracleFileId}`);
+          assert.equal(artifact.sha256, await sha256(published));
+          fixture.firstHash = artifact.sha256;
+        },
+      },
+      {
+        id: "repeat-success",
+        groups: ["idempotencyPathHandling"],
+        adapter: javaJar(checkout, jar, structuredArgs, { structured: true }),
+        async assert(result) {
+          assertSuccess(result);
+          assert.equal(result.metadata.structured.artifacts[0].sha256, fixture.firstHash);
+          assert.equal(await sha256(published), fixture.firstHash);
+        },
       },
       {
         id: "structured-failure",
         groups: ["failureMapping", "streams"],
-        adapter: javaJar(checkout, "lol-pro-data-download-cron-1.0-SNAPSHOT.jar", [
-          ...common,
+        adapter: javaJar(checkout, jar, [
+          `--prodata.download.outputDir=${fixture.output}`,
+          "--prodata.download.years=2026",
+          "--prodata.download.structuredOutput=json",
           `--prodata.download.googleDriveFolderUrl=${fixture.baseUrl}/empty`,
+          `--prodata.download.googleDriveDownloadUrl=${fixture.baseUrl}/download`,
         ], { structured: true }),
         assert(result) {
           assertNonZeroFailure(result);
@@ -192,18 +260,24 @@ const downloader = {
       {
         id: "invalid-invocation",
         groups: ["failureMapping"],
-        adapter: javaJar(checkout, "lol-pro-data-download-cron-1.0-SNAPSHOT.jar", [
-          ...common,
+        adapter: javaJar(checkout, jar, [
+          `--prodata.download.outputDir=${fixture.output}`,
           "--prodata.download.years=not-a-year",
+          "--prodata.download.structuredOutput=json",
+          `--prodata.download.googleDriveFolderUrl=${fixture.baseUrl}/folder`,
+          `--prodata.download.googleDriveDownloadUrl=${fixture.baseUrl}/download`,
         ], { structured: true }),
         assert: assertNonZeroFailure,
       },
       {
         id: "timeout",
         groups: ["timeoutTermination"],
-        adapter: javaJar(checkout, "lol-pro-data-download-cron-1.0-SNAPSHOT.jar", [
-          ...common,
+        adapter: javaJar(checkout, jar, [
+          `--prodata.download.outputDir=${fixture.output}`,
+          "--prodata.download.years=2026",
+          "--prodata.download.structuredOutput=json",
           `--prodata.download.googleDriveFolderUrl=${fixture.baseUrl}/hang`,
+          `--prodata.download.googleDriveDownloadUrl=${fixture.baseUrl}/download`,
         ], { structured: true, timeoutMs: 1500 }),
         assert: assertTimeout,
       },
@@ -294,13 +368,14 @@ const snapshot = {
   id: "ddragon-snapshot",
   name: "Data Dragon snapshot",
   repository: "https://github.com/jmirving/lol-ddragon-snapshot-cron.git",
-  revision: "aa276377b8b10c4caf77499eb9b9d19b52e3dd67",
+  revision: "df1e2bd757d9d1037bde75f0d25fa683224b7a9a",
   build: () => gradleBuild("bootJar"),
   prepare: prepareSnapshot,
   cases: ({ checkout, workspace, fixture }) => {
     const jar = "ai-pb-data-download-cron-1.0-SNAPSHOT.jar";
     const args = (data, endpoint = "versions") => [
       `--ddragon.versions-url=${fixture.baseUrl}/${endpoint}`,
+      `--ddragon.dragontail-base-url=${fixture.baseUrl}/cdn/`,
       `--ddragon.data-dir=${data}`,
       "--ddragon.retention-mode=ephemeral",
     ];
@@ -309,23 +384,32 @@ const snapshot = {
         id: "plain-success",
         groups: ["plainCli", "streams"],
         adapter: javaJar(checkout, jar, args(fixture.plainData)),
-        assert(result) {
+        async assert(result) {
           assertSuccess(result);
           assert.equal(result.metadata.stdout, "");
           assert.match(result.metadata.stderr, /Snapshot processed/);
+          assert.equal(
+            await sha256(join(fixture.plainData, "raw", fixtureVersion, `dragontail-${fixtureVersion}.tgz`)),
+            fixture.archiveSha,
+          );
         },
       },
       {
         id: "structured-success",
         groups: ["structuredOutput", "idempotencyPathHandling"],
         adapter: javaJar(checkout, jar, [...args(fixture.structuredData), "--ddragon.structured-output=true"], { structured: true }),
-        assert(result) {
+        async assert(result) {
           assertSuccess(result);
           assert.equal(result.metadata.structured.detectedVersion, fixtureVersion);
           assert.equal(result.metadata.structured.currentVersion, fixtureVersion);
           assert.equal(result.metadata.structured.retentionMode, "ephemeral");
           assert.equal(result.metadata.structured.extractedPath,
             join(fixture.structuredData, "extracted", fixtureVersion));
+          assert.equal(result.metadata.structured.sha256, fixture.archiveSha);
+          assert.equal(
+            await sha256(join(fixture.structuredData, "raw", fixtureVersion, `dragontail-${fixtureVersion}.tgz`)),
+            fixture.archiveSha,
+          );
           fixture.firstSha = result.metadata.structured.sha256;
         },
       },
@@ -336,12 +420,9 @@ const snapshot = {
         assert(result) {
           assertSuccess(result);
           assert.equal(result.metadata.structured.sha256, fixture.firstSha);
+          assert.equal(result.metadata.structured.previousVersion, fixtureVersion);
+          assert.equal(result.metadata.structured.versionChanged, false);
         },
-      },
-      {
-        id: "local-source-endpoint",
-        groups: ["idempotencyPathHandling"],
-        violation: "reviewed worker exposes a local versions URL but hardcodes the dragontail source URL; the successful fixture must preseed the archive instead of exercising a local source endpoint",
       },
       {
         id: "structured-failure",
