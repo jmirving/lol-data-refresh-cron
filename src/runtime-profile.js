@@ -68,6 +68,10 @@ function parseBindingValue(value, type, name) {
   return parseStringArray(value, name);
 }
 
+function resolveEnvironmentValue(environment, name) {
+  return Object.hasOwn(environment, name) ? environment[name] : undefined;
+}
+
 function resolveSource(descriptor, environment, name) {
   const hasValue = Object.hasOwn(descriptor, "value");
   const hasEnvironment = Object.hasOwn(descriptor, "environment");
@@ -77,7 +81,7 @@ function resolveSource(descriptor, environment, name) {
   if (hasEnvironment && (typeof descriptor.environment !== "string" || descriptor.environment.length === 0)) {
     throw new RuntimeProfileError(`${name} environment must be a non-empty string`);
   }
-  return hasValue ? descriptor.value : environment[descriptor.environment];
+  return hasValue ? descriptor.value : resolveEnvironmentValue(environment, descriptor.environment);
 }
 
 function resolveBindings(definition, environment, profileIdentity) {
@@ -116,10 +120,13 @@ function resolveSecrets(definition, environment, profileIdentity) {
     if (descriptor.required !== undefined && typeof descriptor.required !== "boolean") {
       throw new RuntimeProfileError(`secret ${secretName} required must be a boolean`);
     }
-    const value = environment[descriptor.environment];
+    const value = resolveEnvironmentValue(environment, descriptor.environment);
     if (value === undefined || value === "") {
       if (descriptor.required === false) continue;
       throw new RuntimeProfileError(`profile ${profileIdentity} is missing required secret: ${secretName}`);
+    }
+    if (typeof value !== "string") {
+      throw new RuntimeProfileError(`secret ${secretName} must resolve to a string`);
     }
     resolved[secretName] = value;
   }

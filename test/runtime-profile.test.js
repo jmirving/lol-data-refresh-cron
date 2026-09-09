@@ -72,6 +72,34 @@ test("binding types are parsed and malformed values fail validation", () => {
   );
 });
 
+test("environment-backed bindings ignore inherited properties", () => {
+  assert.throws(
+    () => loadRuntimeProfile("test", {
+      definitions: {
+        test: {
+          bindings: {
+            workspaceRoot: { type: "string", environment: "toString" },
+          },
+        },
+      },
+      environment: {},
+    }),
+    /profile test is missing required binding: workspaceRoot/,
+  );
+
+  const profile = loadRuntimeProfile("test", {
+    definitions: {
+      test: {
+        bindings: {
+          workspaceRoot: { type: "string", environment: "constructor", required: false },
+        },
+      },
+    },
+    environment: {},
+  });
+  assert.equal(Object.hasOwn(profile.bindings, "workspaceRoot"), false);
+});
+
 test("secrets resolve only from environment and are redacted from serialization and summaries", async () => {
   const secretValue = "not-for-output";
   const profile = loadRuntimeProfile("test", {
@@ -139,6 +167,52 @@ test("secrets resolve only from environment and are redacted from serialization 
     }),
     /secret name toJSON is reserved/,
   );
+});
+
+test("secret resolution ignores inherited properties for required and optional secrets", () => {
+  for (const inheritedName of ["toString", "constructor"]) {
+    assert.throws(
+      () => loadRuntimeProfile("test", {
+        definitions: {
+          test: {
+            secrets: { token: { environment: inheritedName } },
+          },
+        },
+        environment: {},
+      }),
+      /profile test is missing required secret: token/,
+    );
+  }
+
+  const profile = loadRuntimeProfile("test", {
+    definitions: {
+      test: {
+        secrets: {
+          firstToken: { environment: "toString", required: false },
+          secondToken: { environment: "constructor", required: false },
+        },
+      },
+    },
+    environment: {},
+  });
+  assert.equal(Object.hasOwn(profile.secrets, "firstToken"), false);
+  assert.equal(Object.hasOwn(profile.secrets, "secondToken"), false);
+});
+
+test("secret values must resolve to strings", () => {
+  for (const invalidValue of [42, () => "secret"]) {
+    assert.throws(
+      () => loadRuntimeProfile("test", {
+        definitions: {
+          test: {
+            secrets: { token: { environment: "TOKEN" } },
+          },
+        },
+        environment: { TOKEN: invalidValue },
+      }),
+      /secret token must resolve to a string/,
+    );
+  }
 });
 
 test("CLI selection supports an argument, environment setting, and safe local default", () => {
