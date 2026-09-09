@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node src/cli.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:worker-conformance": "node conformance/run.js"
   }
 }

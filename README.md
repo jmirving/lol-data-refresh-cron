@@ -64,3 +64,7 @@ Eligibility is a generic policy boundary. Built-in policies cover every invocati
 `createCommandAdapter` executes an external program as a job without a shell. It supports arguments, working directory, inherited environment with explicit overrides, stdout/stderr capture, exit-code mapping, timeouts with termination escalation, and optional generic JSON results.
 
 The complete adapter and future-worker contract is documented in [External Command Adapter Contract](docs/COMMAND_ADAPTER.md).
+
+Pinned external workers can be checked safely before job-graph registration with
+`npm run test:worker-conformance`. See [External Worker Conformance](docs/WORKER_CONFORMANCE.md)
+for local-checkout, single-worker, JSON-report, and fixture details.
