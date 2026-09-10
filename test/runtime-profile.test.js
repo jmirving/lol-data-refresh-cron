@@ -20,13 +20,15 @@ const fixedOptions = {
 test("built-in local, test, and production profiles construct valid bindings", () => {
   assert.deepEqual(loadRuntimeProfile("local", { environment: {} }).bindings, {
     workspaceRoot: ".work/local",
+    workerRoot: "/opt/workers",
   });
   assert.deepEqual(loadRuntimeProfile("test", { environment: {} }).bindings, {
     workspaceRoot: ".work/test",
+    workerRoot: "/opt/workers",
   });
   assert.deepEqual(loadRuntimeProfile("production", {
     environment: { ORCHESTRATOR_WORKSPACE_ROOT: "/var/lib/lol-refresh" },
-  }).bindings, { workspaceRoot: "/var/lib/lol-refresh" });
+  }).bindings, { workspaceRoot: "/var/lib/lol-refresh", workerRoot: "/opt/workers" });
 });
 
 test("unknown profiles fail before configuration is constructed", () => {
@@ -246,6 +248,7 @@ test("CLI validates the profile before injecting it into graph construction", as
   assert.equal(result, summary);
   assert.equal(receivedProfile.identity, "test");
   assert.equal(receivedProfile.bindings.workspaceRoot, ".work/test");
+  assert.equal(receivedProfile.bindings.workerRoot, "/opt/workers");
   assert.deepEqual(receivedMetadata, { profile: "test" });
 });
 

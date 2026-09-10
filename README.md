@@ -37,13 +37,43 @@ npm test
 npm start
 ```
 
-`npm start` currently runs an empty graph intentionally. Real worker registration belongs to later integration phases.
+`npm start` runs the initial four-worker League graph. A normal host invocation
+expects the packaged workers below `/opt/workers`; building and running the Docker
+image is the supported complete local invocation:
+
+```sh
+docker build -t lol-data-refresh-cron .
+docker run --rm lol-data-refresh-cron
+```
+
+The container runs the production profile with `/work` as ephemeral, run-scoped
+intermediate storage. It downloads the current Data Dragon snapshot and Oracle's
+Elixir exports from their public endpoints, then builds each downstream artifact.
+Phase 8 generates artifacts only; durable publication is introduced in Phase 9.
+
+The four worker repositories are built at immutable revisions in the image. Report
+the included revisions from its OCI labels with:
+
+```sh
+docker inspect lol-data-refresh-cron --format '{{json .Config.Labels}}'
+```
 
 Runtime resources are selected and validated before that graph is constructed.
 The CLI defaults to the safe `local` profile and accepts an explicit profile via
 `npm start -- --profile test` or `ORCHESTRATOR_PROFILE`. See
 [Runtime Profiles](docs/RUNTIME_PROFILES.md) for the binding schema, supported
 profiles, production requirements, and secret-handling contract.
+
+## Initial Job Graph
+
+```text
+ddragon-snapshot ──> ddragon-artifact-builder
+oracle-downloader ─> oracle-processor
+```
+
+The branches are independent. Dependency results pass only generic structured
+metadata; worker names, commands, arguments, and path conventions remain in
+`src/jobs.js`, outside scheduler control flow.
 
 ## Generic Core API
 

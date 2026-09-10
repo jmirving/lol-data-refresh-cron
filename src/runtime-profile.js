@@ -141,18 +141,21 @@ export const runtimeProfileDefinitions = Object.freeze({
   local: Object.freeze({
     bindings: Object.freeze({
       workspaceRoot: Object.freeze({ type: "string", value: ".work/local" }),
+      workerRoot: Object.freeze({ type: "string", value: "/opt/workers" }),
     }),
     secrets: Object.freeze({}),
   }),
   test: Object.freeze({
     bindings: Object.freeze({
       workspaceRoot: Object.freeze({ type: "string", value: ".work/test" }),
+      workerRoot: Object.freeze({ type: "string", value: "/opt/workers" }),
     }),
     secrets: Object.freeze({}),
   }),
   production: Object.freeze({
     bindings: Object.freeze({
       workspaceRoot: Object.freeze({ type: "string", environment: "ORCHESTRATOR_WORKSPACE_ROOT" }),
+      workerRoot: Object.freeze({ type: "string", value: "/opt/workers" }),
     }),
     secrets: Object.freeze({}),
   }),

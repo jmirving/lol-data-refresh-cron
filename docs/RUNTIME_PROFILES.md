@@ -14,6 +14,13 @@ ORCHESTRATOR_WORKSPACE_ROOT=/var/lib/lol-refresh npm start -- --profile producti
 The safe default is `local`. Supported built-in identities are `local`, `test`,
 and `production`. Local and test use `.work/local` and `.work/test` respectively.
 Production requires `ORCHESTRATOR_WORKSPACE_ROOT`; `NODE_ENV` is not consulted.
+All built-in profiles resolve packaged worker commands below `/opt/workers`. The
+Docker image supplies those executables and sets the production workspace to `/work`.
+
+Each invocation writes intermediates below `<workspaceRoot>/runs/<runId>` with
+separate `ddragon` and `oracle` branches. Those paths are handoff storage within one
+orchestrator run, not durable publication targets. Container filesystem disposal owns
+their lifecycle.
 
 ## Definition schema
 

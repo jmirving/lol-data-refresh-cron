@@ -253,6 +253,16 @@ These names and relationships are configuration, not scheduler logic.
 
 All four workers can run in one local container invocation using ephemeral intermediate storage.
 
+### Implementation status
+
+Implemented. `src/jobs.js` registers the two independent dependency chains and
+derives every handoff path from the injected runtime workspace and run ID. The
+DDragon artifact job consumes the snapshot worker's structured `detectedVersion`
+and `extractedPath`; the Oracle processor consumes the downloader's run-scoped raw
+directory. The Docker image builds and installs all four pinned workers, runs the
+production graph against `/work`, and exposes the pins as OCI labels. An integration
+test executes all four configured command boundaries and verifies both handoffs.
+
 ---
 
 ## Phase 9 — Initial Durable Outputs

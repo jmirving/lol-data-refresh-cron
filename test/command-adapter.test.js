@@ -27,6 +27,7 @@ function commandJob(configuration) {
     execute: createCommandAdapter({
       command: process.execPath,
       ...configuration,
+      env: { NODE_TEST_CONTEXT: null, ...(configuration.env ?? {}) },
     }),
   });
 }

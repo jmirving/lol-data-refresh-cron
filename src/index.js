@@ -2,6 +2,7 @@ export { daily, eligibilityPolicy, everyInvocation, selectedMonthDays, selectedW
 export { createCommandAdapter } from "./command-adapter.js";
 export { JobGraphError, resolveExecutionOrder } from "./graph.js";
 export { defineJob } from "./job.js";
+export { LeagueJobId, createJobs, defaultWorkerExecutables } from "./jobs.js";
 export { runAndReport, runJobs } from "./orchestrator.js";
 export { runProcess } from "./process.js";
 export { JobStatus, ResultReason } from "./result.js";
