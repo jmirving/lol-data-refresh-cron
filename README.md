@@ -98,3 +98,11 @@ The complete adapter and future-worker contract is documented in [External Comma
 Pinned external workers can be checked safely before job-graph registration with
 `npm run test:worker-conformance`. See [External Worker Conformance](docs/WORKER_CONFORMANCE.md)
 for local-checkout, single-worker, JSON-report, and fixture details.
+
+## License and reuse
+
+This repository is not open source. Copyright © 2026 Joseph Irving. All rights reserved.
+
+No permission is granted to copy, modify, distribute, sublicense, sell, or incorporate this repository's original code, documentation, designs, prompts, schemas, models, or other original material into another project without prior written permission from the copyright owner.
+
+Third-party software, data, trademarks, game assets, APIs, and other third-party materials remain subject to their respective owners' rights and licenses. See [LICENSE](LICENSE).
