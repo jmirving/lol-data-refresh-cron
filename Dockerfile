@@ -38,7 +38,7 @@ RUN mkdir -p /opt/workers/oracle-downloader \
     && cp -a ddragon-artifact-builder/build/install/lol-ddragon-context-artifact-builder/. \
       /opt/workers/ddragon-artifact-builder/
 
-FROM node:22-bookworm-slim
+FROM node:22.23.4-bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openjdk-17-jre-headless \

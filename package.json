@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Generic dependency-aware scheduler for data maintenance jobs",
   "engines": {
-    "node": ">=20"
+    "node": "^22.23.4"
   },
   "scripts": {
     "start": "node src/cli.js",

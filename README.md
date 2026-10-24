@@ -30,7 +30,7 @@ The current workers are only the first jobs. The scheduler must support an arbit
 
 ## Runtime and Development
 
-The orchestration core uses Node.js 20 or newer and has no runtime dependencies. Tests use Node's built-in test runner.
+The orchestration core uses Node.js 22.23.4 or a later patched Node.js 22 release and has no runtime dependencies. Tests use Node's built-in test runner.
 
 ```sh
 npm test
